@@ -28,7 +28,7 @@ def send_email(login=None,mail=None,images=None,attachments=None,use_ssl=None):
     """
     login 是登录信息,包括smtp服务器地址,帐号,密码
     mail 是邮件内容,应该是个字典,包含邮件类型,发送人,收件人(多人的话要使用列表),标题,内容.
-    images 和 attachments 是要发送的图片和附件,要用本地系统的路径.
+    images 和 attachments 是要发送的图片和附件列表,要用本地系统的路径.
     use_ssl 表示是否使用 ssl.
     
     email_type可以是:plain\html
