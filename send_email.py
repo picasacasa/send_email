@@ -11,6 +11,8 @@
 5. 设置根容器属性
 6. 得到格式化后的完整文本
 7. 用 smtp 发送邮件
+
+20151016
 """
 
 import os
@@ -24,28 +26,28 @@ from email.mime.image import MIMEImage
 from email import encoders
 
 
+__author__ = "xxx_828@163.com"
+
+
 def send_email(login=None, mail=None, images=None, attachments=None, use_ssl=None):
+    """发送常规邮件,可以有图片和其它格式的附件
+
+    :param login: dict:登录信息,包括smtp服务器地址,帐号,密码
+                        {'smtpserver': 'smtp.163.com',
+                         'username': 'xxx@163.com',
+                         'password': 'xxx'}
+    :param mail: dict:邮件内容,包含邮件类型,发送人,收件人(多人的话要使用列表),标题,内容.
+                        {'email_type': "html",    # 可以是:plain\html
+                         'from': 'xxx@163.com',
+                         'to': 'xxx@126.com',
+                         'subject': "标题",
+                         'content': "正文"}
+    :param images:          # 图片附件列表(由路径组成)
+    :param attachments:     # 其它附件列表(由路径组成)
+    :param use_ssl:         # 否使用 ssl(暂时无用0
+    :return:
     """
-    login 是登录信息,包括smtp服务器地址,帐号,密码
-    mail 是邮件内容,应该是个字典,包含邮件类型,发送人,收件人(多人的话要使用列表),标题,内容.
-    images 和 attachments 是要发送的图片和附件列表,要用本地系统的路径.
-    use_ssl 表示是否使用 ssl.
-    
-    email_type可以是:plain\html
-    
-    login = {
-        'smtpserver' : 'smtp.163.com',
-        'username' : 'xxx@163.com',
-        'password' : 'xxx'
-    }
-    mail = {
-        'email_type' : "html",
-        'from' : 'xxx@163.com',
-        'to' : 'xxx@126.com',                        
-        'subject' : "标题",
-        'content' : "正文"
-    }
-    """
+
     smtpserver = login.get("smtpserver")
     username = login.get("username")
     password = login.get("password")
@@ -54,76 +56,76 @@ def send_email(login=None, mail=None, images=None, attachments=None, use_ssl=Non
     From = mail.get('from')
     To = mail.get('to')
     Subject = mail.get('subject')
-    content = mail.get('content') 
-    
+    content = mail.get('content')
+
     if not To:
         To = username
     # To 是列表,就用分隔符合并
     if isinstance(To, list):
         To = ','.join(To)
-        
-    if not email_type or (email_type not in ("plain","html")):
-        email_type = "plain"          
-        
-    # 构造 MIMEMultipart 对象做为根容器
+
+    if not email_type or (email_type not in ("plain", "html")):
+        email_type = "html"
+
+    # 构造MIME Multipart 对象做为根容器
     main_msg = MIMEMultipart()
-    
+
     # 添加公共信息
     main_msg['Subject'] = Subject
     main_msg['From'] = From
     main_msg['To'] = To
     # main_msg.preamble = content[:100]       # 序文
-    
-    # 构造MIMEText对象做为邮件显示内容并附加到根容器,统一使用 utf-8
-    text_msg = MIMEText(content, email_type, 'utf-8')        
-    main_msg.attach(text_msg)        
 
-    if images:       
+    # 构造MIMEText对象做为邮件显示内容并附加到根容器,统一使用 utf-8
+    text_msg = MIMEText(content, email_type, 'utf-8')
+    main_msg.attach(text_msg)
+
+    if images:
         for f in images:
             fp = open(f, 'rb')
             img_msg = MIMEImage(fp.read())  # 没有 _subtype 参数,MIMEImage 会自己探测图片类型
             fp.close()
-            
+
             # 设置附件头
             basename = os.path.basename(f)
             img_msg.add_header('content-disposition',
                                'image' + str(images.index(f)), filename=basename)
             main_msg.attach(img_msg)
-            
+
     if attachments:
+        # 构造MIMEBase对象做为文件附件内容并附加到根容器
         for f in attachments:
-            # 构造MIMEBase对象做为文件附件内容并附加到根容器
             basename = os.path.basename(f)
             # 判断文件 MIME
             if "." in basename:     # 带扩展名的
-                content_ype = mimetypes.types_map["." + basename.split(".")[-1]]
+                content_type = mimetypes.types_map["." + basename.split(".")[-1]]
             else:                   # 无扩展名的
-                content_ype = 'application/octet-stream'
-            maintype, subtype = content_ype.split('/', 1)
+                content_type = 'application/octet-stream'
+            maintype, subtype = content_type.split('/', 1)
 
-            fp = open(f, 'rb')            
+            fp = open(f, 'rb')
             file_msg = MIMEBase(maintype, subtype)
             file_msg.set_payload(fp.read())
             fp.close()
-            
+
             encoders.encode_base64(file_msg)
 
-            # 设置附件头          
+            # 设置附件头
             file_msg.add_header('Content-Disposition',
                                 'attachment' + str(images.index(f)), filename=basename)
             main_msg.attach(file_msg)
 
     smtp = smtplib.SMTP(smtpserver)
     # 使用 ssl 的情况
-    if use_ssl:    
+    if use_ssl:
         smtp.ehlo()
         smtp.starttls()
         smtp.ehlo()
-        
+
     smtp.login(username, password)
     # smtp.set_debuglevel(1)            # 调试模式
-    smtp.sendmail(From, To, main_msg.as_string())       
-    smtp.quit()             
+    smtp.sendmail(From, To, main_msg.as_string())
+    smtp.quit()
 
 if __name__ == '__main__':
     d = [
@@ -165,14 +167,12 @@ if __name__ == '__main__':
             },
             
         ]
-    
+
+    login = {'smtpserver': 'smtp.163.com',
+             'username': 'xxx@163.com',
+             'password': 'xxx'}
+
     for i in d:
-        login = {
-            # 邮箱配置要从系统配置获得
-            'smtpserver': 'smtp.163.com',
-            'username': 'xxx@163.com',
-            'password': 'xxx'
-        }
         mail = {
             'email_type': i["t"],
             'from': 'xxx@163.com',
