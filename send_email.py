@@ -55,7 +55,7 @@ def send_email(login=None, mail=None, images=None, attachments=None, use_ssl=Non
     content = mail.get('content')
 
     if not From:
-        To = username
+        From = username
 
     if isinstance(To, list):  # To 是列表,就用分隔符合并
         To = ','.join(To)
